@@ -639,4 +639,6 @@ html:has(.mobile-project-dialog[open]){overflow:hidden}
  .floating-tech{animation:none;translate:none;will-change:auto}
  .site-header{backdrop-filter:none;-webkit-backdrop-filter:none;background:color-mix(in srgb,var(--panel) 92%,transparent)}
  .site-header .mobile-nav{backdrop-filter:none;-webkit-backdrop-filter:none;background:color-mix(in srgb,var(--panel) 98%,transparent)}
+ .project-rail{scroll-snap-type:x proximity}
+ .project-rail>.rail-copy{display:none}
 }

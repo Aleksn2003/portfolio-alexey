@@ -216,6 +216,7 @@ const canonical = Astro.site ? new URL(import.meta.env.BASE_URL, Astro.site) : u
       if (rail) {
         const originals = Array.from(rail.querySelectorAll<HTMLElement>('.project-card'));
         const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+        const mobileProjects = matchMedia('(max-width:760px)');
         let touchedUntil = 0;
         let lastTime = 0;
         let frame = 0;
@@ -231,6 +232,7 @@ const canonical = Astro.site ? new URL(import.meta.env.BASE_URL, Astro.site) : u
           rail.appendChild(clone);
         });
         const tick = (time: number) => {
+          if (mobileProjects.matches) { frame = 0; return; }
           const elapsed = lastTime ? Math.min(time - lastTime, 50) : 0;
           lastTime = time;
           const paused = !railVisible || dragging || touching || reducedMotion.matches || rail.querySelector('.project-details-toggle[aria-expanded="true"]') || time < touchedUntil || document.hidden;
@@ -262,11 +264,18 @@ const canonical = Astro.site ? new URL(import.meta.env.BASE_URL, Astro.site) : u
         const mobileProjectContent = mobileProjectDialog.querySelector<HTMLElement>('.mobile-project-content')!;
         const mobileProjectClose = mobileProjectDialog.querySelector<HTMLButtonElement>('.mobile-project-close')!;
         let activeMobilePanel: HTMLElement | null = null;
-        const mobileProjects = matchMedia('(max-width:760px)');
-        const pauseRailWhilePageScrolls = () => {
-          if (mobileProjects.matches) touchedUntil = performance.now() + 700;
+        const syncRailMotion = () => {
+          measure();
+          if (mobileProjects.matches) {
+            cancelAnimationFrame(frame);
+            frame = 0;
+            offset = rail.scrollLeft;
+          } else if (!frame) {
+            lastTime = 0;
+            frame = requestAnimationFrame(tick);
+          }
         };
-        window.addEventListener('scroll', pauseRailWhilePageScrolls, { passive: true });
+        mobileProjects.addEventListener('change', syncRailMotion);
         const projectPanels = new Map<HTMLElement, (expanded: boolean) => void>();
         rail.querySelectorAll<HTMLElement>('.project-card').forEach(card => {
           const toggle = card.querySelector<HTMLButtonElement>('.project-details-toggle')!;
@@ -326,9 +335,9 @@ const canonical = Astro.site ? new URL(import.meta.env.BASE_URL, Astro.site) : u
         mobileProjectDialog.addEventListener('click', event => { if (event.target === mobileProjectDialog) closeMobileProject(); });
         mobileProjects.addEventListener('change', closeMobileProject);
         document.addEventListener('pointerdown', event => { if ((event.target as Element).closest('.project-details-toggle, .project-detail-panel, .mobile-project-dialog')) return; closeMobileProject(); });
-        measure(); window.addEventListener('resize', measure); frame = requestAnimationFrame(tick);
-        window.addEventListener('pagehide', () => { cancelAnimationFrame(frame); railObserver.disconnect(); window.removeEventListener('scroll', pauseRailWhilePageScrolls); });
-        window.addEventListener('pageshow', event => { if (event.persisted) { lastTime = 0; railObserver.observe(rail); window.addEventListener('scroll', pauseRailWhilePageScrolls, { passive: true }); frame = requestAnimationFrame(tick); } });
+        measure(); window.addEventListener('resize', syncRailMotion); if (!mobileProjects.matches) frame = requestAnimationFrame(tick);
+        window.addEventListener('pagehide', () => { cancelAnimationFrame(frame); railObserver.disconnect(); });
+        window.addEventListener('pageshow', event => { if (event.persisted) { lastTime = 0; railObserver.observe(rail); if (!mobileProjects.matches) frame = requestAnimationFrame(tick); } });
       }
       const sectionLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('.desktop-nav a[href^="#"], .mobile-nav a[href^="#"]'));
       const trackedSections = ['about', 'projects', 'skills', 'services', 'contact'].map(id => document.getElementById(id)).filter((section): section is HTMLElement => !!section);
