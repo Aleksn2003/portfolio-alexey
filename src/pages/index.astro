@@ -263,6 +263,10 @@ const canonical = Astro.site ? new URL(import.meta.env.BASE_URL, Astro.site) : u
         const mobileProjectClose = mobileProjectDialog.querySelector<HTMLButtonElement>('.mobile-project-close')!;
         let activeMobilePanel: HTMLElement | null = null;
         const mobileProjects = matchMedia('(max-width:760px)');
+        const pauseRailWhilePageScrolls = () => {
+          if (mobileProjects.matches) touchedUntil = performance.now() + 700;
+        };
+        window.addEventListener('scroll', pauseRailWhilePageScrolls, { passive: true });
         const projectPanels = new Map<HTMLElement, (expanded: boolean) => void>();
         rail.querySelectorAll<HTMLElement>('.project-card').forEach(card => {
           const toggle = card.querySelector<HTMLButtonElement>('.project-details-toggle')!;
@@ -323,8 +327,8 @@ const canonical = Astro.site ? new URL(import.meta.env.BASE_URL, Astro.site) : u
         mobileProjects.addEventListener('change', closeMobileProject);
         document.addEventListener('pointerdown', event => { if ((event.target as Element).closest('.project-details-toggle, .project-detail-panel, .mobile-project-dialog')) return; closeMobileProject(); });
         measure(); window.addEventListener('resize', measure); frame = requestAnimationFrame(tick);
-        window.addEventListener('pagehide', () => { cancelAnimationFrame(frame); railObserver.disconnect(); });
-        window.addEventListener('pageshow', event => { if (event.persisted) { lastTime = 0; railObserver.observe(rail); frame = requestAnimationFrame(tick); } });
+        window.addEventListener('pagehide', () => { cancelAnimationFrame(frame); railObserver.disconnect(); window.removeEventListener('scroll', pauseRailWhilePageScrolls); });
+        window.addEventListener('pageshow', event => { if (event.persisted) { lastTime = 0; railObserver.observe(rail); window.addEventListener('scroll', pauseRailWhilePageScrolls, { passive: true }); frame = requestAnimationFrame(tick); } });
       }
       const sectionLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('.desktop-nav a[href^="#"], .mobile-nav a[href^="#"]'));
       const trackedSections = ['about', 'projects', 'skills', 'services', 'contact'].map(id => document.getElementById(id)).filter((section): section is HTMLElement => !!section);
@@ -375,7 +379,8 @@ const canonical = Astro.site ? new URL(import.meta.env.BASE_URL, Astro.site) : u
             observer.unobserve(entry.target);
             const element = entry.target as HTMLElement;
             const siblings = element.classList.contains('service-card') || element.classList.contains('principle') ? Array.from(element.parentElement?.children || []) : [];
-            gsap.from(element, { opacity: 0, y: 22, duration: .7, delay: Math.max(0, siblings.indexOf(element)) * .08, ease: 'power2.out', clearProps: 'opacity,transform' });
+            const compactMotion = matchMedia('(max-width:760px), (pointer:coarse)').matches;
+            gsap.from(element, { opacity: 0, y: compactMotion ? 8 : 22, duration: compactMotion ? .42 : .7, delay: Math.max(0, siblings.indexOf(element)) * (compactMotion ? .025 : .08), ease: 'power2.out', clearProps: 'opacity,transform' });
           });
         }, { threshold: .08, rootMargin: '0px 0px -35px 0px' });
         targets.forEach(element => observer.observe(element));
