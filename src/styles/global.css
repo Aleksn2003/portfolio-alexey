@@ -644,3 +644,12 @@ html:has(.mobile-project-dialog[open]){overflow:hidden}
 }
 .contact-form .form-honeypot{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .contact-form button:disabled{opacity:.65;cursor:wait}
+.contact-form .form-status{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted);font-size:12px;line-height:1.5;min-height:44px}
+.contact-form .form-status::before{content:'i';display:grid;place-items:center;flex:none;width:18px;height:18px;border:1px solid currentColor;border-radius:50%;font-size:11px;font-weight:700;line-height:1}
+.contact-form .form-status[data-state=success]{color:#22875e;border-color:color-mix(in srgb,#22875e 35%,var(--line));background:color-mix(in srgb,#22875e 10%,var(--panel))}
+.contact-form .form-status[data-state=success]::before{content:'✓'}
+.contact-form .form-status[data-state=error]{color:#c75b58;border-color:color-mix(in srgb,#c75b58 38%,var(--line));background:color-mix(in srgb,#c75b58 10%,var(--panel))}
+.contact-form .form-status[data-state=error]::before{content:'!'}
+.contact-form .form-status[data-state=sending]::before{content:'';border-width:2px;border-right-color:transparent;animation:form-status-spin .7s linear infinite}
+@keyframes form-status-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.contact-form .form-status[data-state=sending]::before{animation:none}}
